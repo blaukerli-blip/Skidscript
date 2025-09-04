@@ -1,4 +1,4 @@
--- Final Speed & Fly Script with REAL Flying for Xeno
+-- Final Speed & Fly Script with REAL Flying + Noclip for Xeno
 -- Copy this entire script and paste into Xeno
 
 wait(2) -- Wait for game to load
@@ -10,8 +10,10 @@ local rootPart = character:FindFirstChild("HumanoidRootPart") or character:WaitF
 
 -- Fly variables
 local isFlying = false
+local isNoclip = false
 local flySpeed = 50
 local flyConnection = nil
+local noclipConnection = nil
 local originalGravity = workspace.Gravity
 
 -- Create GUI
@@ -20,8 +22,8 @@ gui.Name = "SpeedFlyGUI"
 gui.Parent = player.PlayerGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 220, 0, 160)
-frame.Position = UDim2.new(0.5, -110, 0.5, -80)
+frame.Size = UDim2.new(0, 220, 0, 190)
+frame.Position = UDim2.new(0.5, -110, 0.5, -95)
 frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 frame.BorderSizePixel = 0
 frame.Parent = gui
@@ -111,10 +113,26 @@ local flyCorner = Instance.new("UICorner")
 flyCorner.CornerRadius = UDim.new(0, 5)
 flyCorner.Parent = flyBtn
 
+-- Noclip button
+local noclipBtn = Instance.new("TextButton")
+noclipBtn.Size = UDim2.new(0.4, 0, 0, 25)
+noclipBtn.Position = UDim2.new(0.55, 0, 0, 105)
+noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 150, 0)
+noclipBtn.BorderSizePixel = 0
+noclipBtn.Text = "Noclip: OFF"
+noclipBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+noclipBtn.TextScaled = true
+noclipBtn.Font = Enum.Font.GothamBold
+noclipBtn.Parent = frame
+
+local noclipCorner = Instance.new("UICorner")
+noclipCorner.CornerRadius = UDim.new(0, 5)
+noclipCorner.Parent = noclipBtn
+
 -- Reset button
 local resetBtn = Instance.new("TextButton")
 resetBtn.Size = UDim2.new(0.4, 0, 0, 25)
-resetBtn.Position = UDim2.new(0.55, 0, 0, 105)
+resetBtn.Position = UDim2.new(0.3, 0, 0, 140)
 resetBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
 resetBtn.BorderSizePixel = 0
 resetBtn.Text = "Reset"
@@ -130,7 +148,7 @@ resetCorner.Parent = resetBtn
 -- Status display
 local statusText = Instance.new("TextLabel")
 statusText.Size = UDim2.new(1, -20, 0, 20)
-statusText.Position = UDim2.new(0, 10, 0, 140)
+statusText.Position = UDim2.new(0, 10, 0, 170)
 statusText.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 statusText.BorderSizePixel = 0
 statusText.Text = "Ready"
@@ -221,6 +239,45 @@ local function startFlying()
     end)
 end
 
+local function stopNoclip()
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+    
+    -- Re-enable collisions
+    for _, part in pairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = true
+        end
+    end
+    
+    isNoclip = false
+    noclipBtn.Text = "Noclip: OFF"
+    noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 150, 0)
+    updateStatus("Noclip disabled", Color3.fromRGB(255, 255, 0))
+end
+
+local function startNoclip()
+    stopNoclip() -- Stop any existing noclip
+    
+    isNoclip = true
+    noclipBtn.Text = "Noclip: ON"
+    noclipBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
+    updateStatus("Noclip enabled", Color3.fromRGB(0, 255, 0))
+    
+    noclipConnection = game:GetService("RunService").Heartbeat:Connect(function()
+        if isNoclip and character then
+            -- Disable collisions for all parts
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+end
+
 -- Button events
 setSpeedBtn.MouseButton1Click:Connect(function()
     local speed = tonumber(speedInput.Text)
@@ -241,10 +298,19 @@ flyBtn.MouseButton1Click:Connect(function()
     end
 end)
 
+noclipBtn.MouseButton1Click:Connect(function()
+    if isNoclip then
+        stopNoclip()
+    else
+        startNoclip()
+    end
+end)
+
 resetBtn.MouseButton1Click:Connect(function()
     humanoid.WalkSpeed = 16
     updateSpeed()
     stopFlying()
+    stopNoclip()
     updateStatus("Reset to default", Color3.fromRGB(0, 255, 0))
 end)
 
@@ -279,16 +345,18 @@ player.CharacterAdded:Connect(function(newChar)
     rootPart = character:WaitForChild("HumanoidRootPart")
     updateSpeed()
     stopFlying()
+    stopNoclip()
     updateStatus("Character respawned", Color3.fromRGB(255, 255, 0))
 end)
 
 -- Update when speed changes
 humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(updateSpeed)
 
-print("Speed & REAL Fly Editor loaded!")
+print("Speed & Fly & Noclip Editor loaded!")
 print("Drag the title bar to move the GUI")
 print("WASD + Space/Shift to fly")
-print("Click Fly button to toggle")
+print("Click Fly button to toggle flying")
+print("Click Noclip button to walk through walls")
 print("Enter speed (5-100) and click Set")
 print("Click Reset to return to default")
-print("Now you can actually fly in the air!")
+print("Now you can fly AND walk through walls!")

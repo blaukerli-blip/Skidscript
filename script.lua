@@ -1,4 +1,4 @@
--- Final Speed & Fly Script with Movable UI for Xeno
+-- Final Speed & Fly Script with REAL Flying for Xeno
 -- Copy this entire script and paste into Xeno
 
 wait(2) -- Wait for game to load
@@ -12,6 +12,7 @@ local rootPart = character:FindFirstChild("HumanoidRootPart") or character:WaitF
 local isFlying = false
 local flySpeed = 50
 local flyConnection = nil
+local originalGravity = workspace.Gravity
 
 -- Create GUI
 local gui = Instance.new("ScreenGui")
@@ -158,6 +159,11 @@ local function stopFlying()
         flyConnection:Disconnect()
         flyConnection = nil
     end
+    
+    -- Restore normal physics
+    workspace.Gravity = originalGravity
+    humanoid:ChangeState(Enum.HumanoidStateType.Landing)
+    
     isFlying = false
     flyBtn.Text = "Fly: OFF"
     flyBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
@@ -172,22 +178,34 @@ local function startFlying()
     flyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
     updateStatus("Flying enabled", Color3.fromRGB(0, 255, 0))
     
+    -- Disable gravity for real flying
+    workspace.Gravity = 0
+    
     flyConnection = game:GetService("RunService").Heartbeat:Connect(function()
         if isFlying and humanoid and rootPart then
-            local moveDirection = Vector3.new(0, 0, 0)
+            -- Keep character in flying state
+            humanoid:ChangeState(Enum.HumanoidStateType.Flying)
             
+            local moveDirection = Vector3.new(0, 0, 0)
+            local camera = workspace.CurrentCamera
+            
+            -- Forward/Backward
             if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) then
-                moveDirection = moveDirection + (workspace.CurrentCamera.CFrame.LookVector * flySpeed)
+                moveDirection = moveDirection + (camera.CFrame.LookVector * flySpeed)
             end
             if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.S) then
-                moveDirection = moveDirection - (workspace.CurrentCamera.CFrame.LookVector * flySpeed)
+                moveDirection = moveDirection - (camera.CFrame.LookVector * flySpeed)
             end
+            
+            -- Left/Right
             if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.A) then
-                moveDirection = moveDirection - (workspace.CurrentCamera.CFrame.RightVector * flySpeed)
+                moveDirection = moveDirection - (camera.CFrame.RightVector * flySpeed)
             end
             if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.D) then
-                moveDirection = moveDirection + (workspace.CurrentCamera.CFrame.RightVector * flySpeed)
+                moveDirection = moveDirection + (camera.CFrame.RightVector * flySpeed)
             end
+            
+            -- Up/Down
             if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.Space) then
                 moveDirection = moveDirection + Vector3.new(0, flySpeed, 0)
             end
@@ -195,7 +213,10 @@ local function startFlying()
                 moveDirection = moveDirection - Vector3.new(0, flySpeed, 0)
             end
             
-            rootPart.CFrame = rootPart.CFrame + moveDirection * 0.01
+            -- Apply movement
+            if moveDirection.Magnitude > 0 then
+                rootPart.CFrame = rootPart.CFrame + moveDirection * 0.01
+            end
         end
     end)
 end
@@ -264,9 +285,10 @@ end)
 -- Update when speed changes
 humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(updateSpeed)
 
-print("Speed & Fly Editor loaded!")
+print("Speed & REAL Fly Editor loaded!")
 print("Drag the title bar to move the GUI")
 print("WASD + Space/Shift to fly")
 print("Click Fly button to toggle")
 print("Enter speed (5-100) and click Set")
 print("Click Reset to return to default")
+print("Now you can actually fly in the air!")

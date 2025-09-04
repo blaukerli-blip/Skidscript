@@ -1,56 +1,41 @@
--- Walk Speed Editor for Xeno Executor (GitHub Raw Compatible)
--- This script is optimized for executors and raw loading
+-- Clean Walk Speed & Fly Editor for Xeno (GitHub Raw)
+-- Copy this entire script and paste into Xeno
 
--- Wait for game to load
-wait(1)
+wait(2) -- Wait for game to load
 
--- Services
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:FindFirstChild("Humanoid") or character:WaitForChild("Humanoid")
+local rootPart = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
 
--- Get player and character
-local player = Players.LocalPlayer
-if not player then
-    print("Player not found!")
-    return
-end
-
-local character = player.Character
-if not character then
-    character = player.CharacterAdded:Wait()
-end
-
-local humanoid = character:FindFirstChild("Humanoid")
-if not humanoid then
-    humanoid = character:WaitForChild("Humanoid")
-end
+-- Fly variables
+local isFlying = false
+local flySpeed = 50
+local flyConnection = nil
 
 -- Create GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "WalkSpeedGUI"
-screenGui.Parent = player.PlayerGui
+local gui = Instance.new("ScreenGui")
+gui.Name = "SpeedFlyGUI"
+gui.Parent = player.PlayerGui
 
--- Main frame
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 250, 0, 150)
-frame.Position = UDim2.new(0.5, -125, 0.5, -75)
-frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+frame.Size = UDim2.new(0, 220, 0, 160)
+frame.Position = UDim2.new(0.5, -110, 0.5, -80)
+frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 frame.BorderSizePixel = 0
-frame.Parent = screenGui
+frame.Parent = gui
 
--- Corner radius
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 10)
 corner.Parent = frame
 
--- Title bar
+-- Title
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 30)
 title.Position = UDim2.new(0, 0, 0, 0)
-title.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 title.BorderSizePixel = 0
-title.Text = "Walk Speed Editor"
+title.Text = "Speed & Fly Editor"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextScaled = true
 title.Font = Enum.Font.GothamBold
@@ -60,13 +45,13 @@ local titleCorner = Instance.new("UICorner")
 titleCorner.CornerRadius = UDim.new(0, 10)
 titleCorner.Parent = title
 
--- Speed display
+-- Speed section
 local speedLabel = Instance.new("TextLabel")
-speedLabel.Size = UDim2.new(1, -20, 0, 25)
+speedLabel.Size = UDim2.new(1, -20, 0, 20)
 speedLabel.Position = UDim2.new(0, 10, 0, 40)
-speedLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+speedLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 speedLabel.BorderSizePixel = 0
-speedLabel.Text = "Current Speed: " .. humanoid.WalkSpeed
+speedLabel.Text = "Walk Speed: " .. humanoid.WalkSpeed
 speedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 speedLabel.TextScaled = true
 speedLabel.Font = Enum.Font.Gotham
@@ -76,123 +61,187 @@ local speedCorner = Instance.new("UICorner")
 speedCorner.CornerRadius = UDim.new(0, 5)
 speedCorner.Parent = speedLabel
 
--- Input box
-local inputBox = Instance.new("TextBox")
-inputBox.Size = UDim2.new(0.6, 0, 0, 25)
-inputBox.Position = UDim2.new(0.05, 0, 0, 75)
-inputBox.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-inputBox.BorderSizePixel = 0
-inputBox.Text = tostring(humanoid.WalkSpeed)
-inputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-inputBox.TextScaled = true
-inputBox.Font = Enum.Font.Gotham
-inputBox.PlaceholderText = "Speed"
-inputBox.Parent = frame
+-- Speed input
+local speedInput = Instance.new("TextBox")
+speedInput.Size = UDim2.new(0.6, 0, 0, 25)
+speedInput.Position = UDim2.new(0.05, 0, 0, 70)
+speedInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+speedInput.BorderSizePixel = 0
+speedInput.Text = tostring(humanoid.WalkSpeed)
+speedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedInput.TextScaled = true
+speedInput.Font = Enum.Font.Gotham
+speedInput.PlaceholderText = "Speed"
+speedInput.Parent = frame
 
-local inputCorner = Instance.new("UICorner")
-inputCorner.CornerRadius = UDim.new(0, 5)
-inputCorner.Parent = inputBox
+local speedInputCorner = Instance.new("UICorner")
+speedInputCorner.CornerRadius = UDim.new(0, 5)
+speedInputCorner.Parent = speedInput
 
--- Set button
-local setButton = Instance.new("TextButton")
-setButton.Size = UDim2.new(0.25, 0, 0, 25)
-setButton.Position = UDim2.new(0.7, 0, 0, 75)
-setButton.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-setButton.BorderSizePixel = 0
-setButton.Text = "Set"
-setButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-setButton.TextScaled = true
-setButton.Font = Enum.Font.GothamBold
-setButton.Parent = frame
+-- Set speed button
+local setSpeedBtn = Instance.new("TextButton")
+setSpeedBtn.Size = UDim2.new(0.25, 0, 0, 25)
+setSpeedBtn.Position = UDim2.new(0.7, 0, 0, 70)
+setSpeedBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+setSpeedBtn.BorderSizePixel = 0
+setSpeedBtn.Text = "Set"
+setSpeedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+setSpeedBtn.TextScaled = true
+setSpeedBtn.Font = Enum.Font.GothamBold
+setSpeedBtn.Parent = frame
 
-local setCorner = Instance.new("UICorner")
-setCorner.CornerRadius = UDim.new(0, 5)
-setCorner.Parent = setButton
+local setSpeedCorner = Instance.new("UICorner")
+setSpeedCorner.CornerRadius = UDim.new(0, 5)
+setSpeedCorner.Parent = setSpeedBtn
+
+-- Fly button
+local flyBtn = Instance.new("TextButton")
+flyBtn.Size = UDim2.new(0.4, 0, 0, 25)
+flyBtn.Position = UDim2.new(0.05, 0, 0, 105)
+flyBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+flyBtn.BorderSizePixel = 0
+flyBtn.Text = "Fly: OFF"
+flyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+flyBtn.TextScaled = true
+flyBtn.Font = Enum.Font.GothamBold
+flyBtn.Parent = frame
+
+local flyCorner = Instance.new("UICorner")
+flyCorner.CornerRadius = UDim.new(0, 5)
+flyCorner.Parent = flyBtn
 
 -- Reset button
-local resetButton = Instance.new("TextButton")
-resetButton.Size = UDim2.new(0.4, 0, 0, 25)
-resetButton.Position = UDim2.new(0.3, 0, 0, 110)
-resetButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-resetButton.BorderSizePixel = 0
-resetButton.Text = "Reset to 16"
-resetButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-resetButton.TextScaled = true
-resetButton.Font = Enum.Font.GothamBold
-resetButton.Parent = frame
+local resetBtn = Instance.new("TextButton")
+resetBtn.Size = UDim2.new(0.4, 0, 0, 25)
+resetBtn.Position = UDim2.new(0.55, 0, 0, 105)
+resetBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+resetBtn.BorderSizePixel = 0
+resetBtn.Text = "Reset"
+resetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+resetBtn.TextScaled = true
+resetBtn.Font = Enum.Font.GothamBold
+resetBtn.Parent = frame
 
 local resetCorner = Instance.new("UICorner")
 resetCorner.CornerRadius = UDim.new(0, 5)
-resetCorner.Parent = resetButton
+resetCorner.Parent = resetBtn
 
--- Update function
+-- Status display
+local statusText = Instance.new("TextLabel")
+statusText.Size = UDim2.new(1, -20, 0, 20)
+statusText.Position = UDim2.new(0, 10, 0, 140)
+statusText.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+statusText.BorderSizePixel = 0
+statusText.Text = "Ready"
+statusText.TextColor3 = Color3.fromRGB(0, 255, 0)
+statusText.TextScaled = true
+statusText.Font = Enum.Font.Gotham
+statusText.Parent = frame
+
+local statusCorner = Instance.new("UICorner")
+statusCorner.CornerRadius = UDim.new(0, 5)
+statusCorner.Parent = statusText
+
+-- Functions
 local function updateSpeed()
-    if humanoid then
-        speedLabel.Text = "Current Speed: " .. humanoid.WalkSpeed
-        inputBox.Text = tostring(humanoid.WalkSpeed)
+    speedLabel.Text = "Walk Speed: " .. humanoid.WalkSpeed
+    speedInput.Text = tostring(humanoid.WalkSpeed)
+end
+
+local function updateStatus(text, color)
+    statusText.Text = text
+    statusText.TextColor3 = color
+end
+
+local function stopFlying()
+    if flyConnection then
+        flyConnection:Disconnect()
+        flyConnection = nil
     end
+    isFlying = false
+    flyBtn.Text = "Fly: OFF"
+    flyBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    updateStatus("Flying stopped", Color3.fromRGB(255, 255, 0))
+end
+
+local function startFlying()
+    stopFlying() -- Stop any existing flight
+    
+    isFlying = true
+    flyBtn.Text = "Fly: ON"
+    flyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+    updateStatus("Flying enabled", Color3.fromRGB(0, 255, 0))
+    
+    flyConnection = game:GetService("RunService").Heartbeat:Connect(function()
+        if isFlying and humanoid and rootPart then
+            local moveDirection = Vector3.new(0, 0, 0)
+            
+            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) then
+                moveDirection = moveDirection + (workspace.CurrentCamera.CFrame.LookVector * flySpeed)
+            end
+            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.S) then
+                moveDirection = moveDirection - (workspace.CurrentCamera.CFrame.LookVector * flySpeed)
+            end
+            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.A) then
+                moveDirection = moveDirection - (workspace.CurrentCamera.CFrame.RightVector * flySpeed)
+            end
+            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.D) then
+                moveDirection = moveDirection + (workspace.CurrentCamera.CFrame.RightVector * flySpeed)
+            end
+            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.Space) then
+                moveDirection = moveDirection + Vector3.new(0, flySpeed, 0)
+            end
+            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftShift) then
+                moveDirection = moveDirection - Vector3.new(0, flySpeed, 0)
+            end
+            
+            rootPart.CFrame = rootPart.CFrame + moveDirection * 0.01
+        end
+    end)
 end
 
 -- Button events
-setButton.MouseButton1Click:Connect(function()
-    local newSpeed = tonumber(inputBox.Text)
-    if newSpeed and newSpeed >= 5 and newSpeed <= 100 and humanoid then
-        humanoid.WalkSpeed = newSpeed
+setSpeedBtn.MouseButton1Click:Connect(function()
+    local speed = tonumber(speedInput.Text)
+    if speed and speed >= 5 and speed <= 100 then
+        humanoid.WalkSpeed = speed
         updateSpeed()
+        updateStatus("Speed set to " .. speed, Color3.fromRGB(0, 255, 0))
     else
-        inputBox.Text = tostring(humanoid.WalkSpeed or 16)
+        updateStatus("Invalid speed (5-100)", Color3.fromRGB(255, 100, 100))
     end
 end)
 
-resetButton.MouseButton1Click:Connect(function()
-    if humanoid then
-        humanoid.WalkSpeed = 16
-        updateSpeed()
+flyBtn.MouseButton1Click:Connect(function()
+    if isFlying then
+        stopFlying()
+    else
+        startFlying()
     end
+end)
+
+resetBtn.MouseButton1Click:Connect(function()
+    humanoid.WalkSpeed = 16
+    updateSpeed()
+    stopFlying()
+    updateStatus("Reset to default", Color3.fromRGB(0, 255, 0))
 end)
 
 -- Character respawn
-player.CharacterAdded:Connect(function(newCharacter)
-    character = newCharacter
+player.CharacterAdded:Connect(function(newChar)
+    character = newChar
     humanoid = character:WaitForChild("Humanoid")
+    rootPart = character:WaitForChild("HumanoidRootPart")
     updateSpeed()
+    stopFlying()
+    updateStatus("Character respawned", Color3.fromRGB(255, 255, 0))
 end)
 
--- Update when walk speed changes
-if humanoid then
-    humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(updateSpeed)
-end
+-- Update when speed changes
+humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(updateSpeed)
 
--- Make draggable
-local isDragging = false
-local dragStart = nil
-local startPos = nil
-
-title.MouseButton1Down:Connect(function()
-    isDragging = true
-    dragStart = frame.Position
-    startPos = UserInputService:GetMouseLocation()
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        isDragging = false
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = UserInputService:GetMouseLocation() - startPos
-        frame.Position = UDim2.new(dragStart.X.Scale, dragStart.X.Offset + delta.X, dragStart.Y.Scale, dragStart.Y.Offset + delta.Y)
-    end
-end)
-
--- Keep script alive
-RunService.Heartbeat:Connect(function()
-    -- Script stays active
-end)
-
-print("Walk Speed Editor loaded successfully!")
-print("Drag the title bar to move the GUI")
-print("Enter a speed (5-100) and click Set")
-print("Click Reset to return to default speed (16)")
+print("Speed & Fly Editor loaded!")
+print("WASD + Space/Shift to fly")
+print("Click Fly button to toggle")
+print("Enter speed (5-100) and click Set")
+print("Click Reset to return to default")

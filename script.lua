@@ -207,7 +207,7 @@ statusText.Size = UDim2.new(1, -20, 0, 20)
 statusText.Position = UDim2.new(0, 10, 0, 290)
 statusText.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 statusText.BorderSizePixel = 0
-statusText.Text = "Enter password: 1234"
+statusText.Text = "Enter password to unlock"
 statusText.TextColor3 = Color3.fromRGB(255, 255, 0)
 statusText.TextScaled = true
 statusText.Font = Enum.Font.Gotham
@@ -244,8 +244,11 @@ local function stopFlying()
         flyConnection = nil
     end
     
+    -- Restore normal physics
     workspace.Gravity = originalGravity
-    humanoid:ChangeState(Enum.HumanoidStateType.Landing)
+    if humanoid then
+        humanoid:ChangeState(Enum.HumanoidStateType.Landing)
+    end
     
     isFlyEnabled = false
     flyBtn.Text = "Fly: OFF"
@@ -261,27 +264,34 @@ local function startFlying()
     flyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
     updateStatus("Flying enabled", Color3.fromRGB(0, 255, 0))
     
+    -- Disable gravity for real flying
     workspace.Gravity = 0
     
     flyConnection = game:GetService("RunService").Heartbeat:Connect(function()
         if isFlyEnabled and humanoid and rootPart then
+            -- Keep character in flying state
             humanoid:ChangeState(Enum.HumanoidStateType.Flying)
             
             local moveDirection = Vector3.new(0, 0, 0)
             local camera = workspace.CurrentCamera
             
+            -- Forward/Backward
             if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) then
                 moveDirection = moveDirection + (camera.CFrame.LookVector * flySpeed)
             end
             if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.S) then
                 moveDirection = moveDirection - (camera.CFrame.LookVector * flySpeed)
             end
+            
+            -- Left/Right
             if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.A) then
                 moveDirection = moveDirection - (camera.CFrame.RightVector * flySpeed)
             end
             if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.D) then
                 moveDirection = moveDirection + (camera.CFrame.RightVector * flySpeed)
             end
+            
+            -- Up/Down
             if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.Space) then
                 moveDirection = moveDirection + Vector3.new(0, flySpeed, 0)
             end
@@ -289,8 +299,10 @@ local function startFlying()
                 moveDirection = moveDirection - Vector3.new(0, flySpeed, 0)
             end
             
+            -- Apply movement with better physics
             if moveDirection.Magnitude > 0 then
-                rootPart.CFrame = rootPart.CFrame + moveDirection * 0.01
+                local newCFrame = rootPart.CFrame + (moveDirection * 0.01)
+                rootPart.CFrame = newCFrame
             end
         end
     end)
@@ -362,7 +374,7 @@ end
 
 -- Button events
 unlockBtn.MouseButton1Click:Connect(function()
-    if passwordInput.Text == "1234" then
+    if passwordInput.Text == "8080" then
         unlockGUI()
     else
         updateStatus("Wrong password!", Color3.fromRGB(255, 100, 100))
@@ -371,7 +383,7 @@ unlockBtn.MouseButton1Click:Connect(function()
 end)
 
 passwordInput.FocusLost:Connect(function()
-    if passwordInput.Text == "1234" then
+    if passwordInput.Text == "8080" then
         unlockGUI()
     end
 end)
@@ -430,8 +442,9 @@ player.CharacterAdded:Connect(function(newChar)
 end)
 
 print("Simple Fly GUI loaded!")
-print("Password is: 1234")
+print("Password is: 8080")
 print("GUI is in top right corner")
 print("WASD + Space/Shift to fly")
 print("Click buttons to toggle features")
 print("Enter speed (5-100) and click Set")
+

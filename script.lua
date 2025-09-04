@@ -1,5 +1,5 @@
--- Final Speed & Fly Script with REAL Flying + Noclip + Password for Xeno
--- Copy this entire script and paste into Xeno
+-- ERLC Utility Script for Own Game Server
+-- Copy this entire script and paste into your executor
 
 wait(2) -- Wait for game to load
 
@@ -8,24 +8,29 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:FindFirstChild("Humanoid") or character:WaitForChild("Humanoid")
 local rootPart = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
 
--- Fly variables
-local isFlying = false
-local isNoclip = false
-local flySpeed = 50
+-- Variables
+local isESPEnabled = false
+local isSpeedEnabled = false
+local isFlyEnabled = false
+local isNoclipEnabled = false
+local espConnection = nil
+local speedConnection = nil
 local flyConnection = nil
 local noclipConnection = nil
 local originalGravity = workspace.Gravity
-local isUnlocked = false
+local originalWalkSpeed = humanoid.WalkSpeed
+local flySpeed = 50
+local speedMultiplier = 2
 
 -- Create GUI
 local gui = Instance.new("ScreenGui")
-gui.Name = "SpeedFlyGUI"
+gui.Name = "ERLCUtilityGUI"
 gui.Parent = player.PlayerGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 220, 0, 190)
-frame.Position = UDim2.new(0.5, -110, 0.5, -95)
-frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+frame.Size = UDim2.new(0, 250, 0, 350)
+frame.Position = UDim2.new(0.5, -125, 0.5, -175)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
 frame.Parent = gui
 
@@ -33,13 +38,13 @@ local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 10)
 corner.Parent = frame
 
--- Title (this is draggable)
+-- Title (draggable)
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
+title.Size = UDim2.new(1, 0, 0, 35)
 title.Position = UDim2.new(0, 0, 0, 0)
-title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 title.BorderSizePixel = 0
-title.Text = "Speed & Fly Editor"
+title.Text = "ERLC Utility Panel"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextScaled = true
 title.Font = Enum.Font.GothamBold
@@ -49,164 +54,154 @@ local titleCorner = Instance.new("UICorner")
 titleCorner.CornerRadius = UDim.new(0, 10)
 titleCorner.Parent = title
 
--- Password section
-local passwordLabel = Instance.new("TextLabel")
-passwordLabel.Size = UDim2.new(1, -20, 0, 20)
-passwordLabel.Position = UDim2.new(0, 10, 0, 40)
-passwordLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-passwordLabel.BorderSizePixel = 0
-passwordLabel.Text = "Enter Password:"
-passwordLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-passwordLabel.TextScaled = true
-passwordLabel.Font = Enum.Font.Gotham
-passwordLabel.Parent = frame
+-- ESP Section
+local espLabel = Instance.new("TextLabel")
+espLabel.Size = UDim2.new(1, -20, 0, 25)
+espLabel.Position = UDim2.new(0, 10, 0, 45)
+espLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+espLabel.BorderSizePixel = 0
+espLabel.Text = "ESP Features"
+espLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+espLabel.TextScaled = true
+espLabel.Font = Enum.Font.GothamBold
+espLabel.Parent = frame
 
-local passwordLabelCorner = Instance.new("UICorner")
-passwordLabelCorner.CornerRadius = UDim.new(0, 5)
-passwordLabelCorner.Parent = passwordLabel
+local espLabelCorner = Instance.new("UICorner")
+espLabelCorner.CornerRadius = UDim.new(0, 5)
+espLabelCorner.Parent = espLabel
 
-local passwordInput = Instance.new("TextBox")
-passwordInput.Size = UDim2.new(0.6, 0, 0, 25)
-passwordInput.Position = UDim2.new(0.05, 0, 0, 70)
-passwordInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-passwordInput.BorderSizePixel = 0
-passwordInput.Text = ""
-passwordInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-passwordInput.TextScaled = true
-passwordInput.Font = Enum.Font.Gotham
-passwordInput.PlaceholderText = "Password"
-passwordInput.Parent = frame
+-- ESP Buttons
+local espBtn = Instance.new("TextButton")
+espBtn.Size = UDim2.new(0.45, 0, 0, 30)
+espBtn.Position = UDim2.new(0.025, 0, 0, 80)
+espBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+espBtn.BorderSizePixel = 0
+espBtn.Text = "ESP: OFF"
+espBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+espBtn.TextScaled = true
+espBtn.Font = Enum.Font.GothamBold
+espBtn.Parent = frame
 
-local passwordInputCorner = Instance.new("UICorner")
-passwordInputCorner.CornerRadius = UDim.new(0, 5)
-passwordInputCorner.Parent = passwordInput
+local espCorner = Instance.new("UICorner")
+espCorner.CornerRadius = UDim.new(0, 5)
+espCorner.Parent = espBtn
 
-local unlockBtn = Instance.new("TextButton")
-unlockBtn.Size = UDim2.new(0.25, 0, 0, 25)
-unlockBtn.Position = UDim2.new(0.7, 0, 0, 70)
-unlockBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
-unlockBtn.BorderSizePixel = 0
-unlockBtn.Text = "Unlock"
-unlockBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-unlockBtn.TextScaled = true
-unlockBtn.Font = Enum.Font.GothamBold
-unlockBtn.Parent = frame
+local boxEspBtn = Instance.new("TextButton")
+boxEspBtn.Size = UDim2.new(0.45, 0, 0, 30)
+boxEspBtn.Position = UDim2.new(0.525, 0, 0, 80)
+boxEspBtn.BackgroundColor3 = Color3.fromRGB(255, 150, 100)
+boxEspBtn.BorderSizePixel = 0
+boxEspBtn.Text = "Box ESP: OFF"
+boxEspBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+boxEspBtn.TextScaled = true
+boxEspBtn.Font = Enum.Font.GothamBold
+boxEspBtn.Parent = frame
 
-local unlockCorner = Instance.new("UICorner")
-unlockCorner.CornerRadius = UDim.new(0, 5)
-unlockCorner.Parent = unlockBtn
+local boxEspCorner = Instance.new("UICorner")
+boxEspCorner.CornerRadius = UDim.new(0, 5)
+boxEspCorner.Parent = boxEspBtn
 
--- Speed section (hidden until unlocked)
-local speedLabel = Instance.new("TextLabel")
-speedLabel.Size = UDim2.new(1, -20, 0, 20)
-speedLabel.Position = UDim2.new(0, 10, 0, 105)
-speedLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-speedLabel.BorderSizePixel = 0
-speedLabel.Text = "Walk Speed: " .. humanoid.WalkSpeed
-speedLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-speedLabel.TextScaled = true
-speedLabel.Font = Enum.Font.Gotham
-speedLabel.Parent = frame
-speedLabel.Visible = false
+local nameEspBtn = Instance.new("TextButton")
+nameEspBtn.Size = UDim2.new(0.45, 0, 0, 30)
+nameEspBtn.Position = UDim2.new(0.025, 0, 0, 120)
+nameEspBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+nameEspBtn.BorderSizePixel = 0
+nameEspBtn.Text = "Name ESP: OFF"
+nameEspBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+nameEspBtn.TextScaled = true
+nameEspBtn.Font = Enum.Font.GothamBold
+nameEspBtn.Parent = frame
+
+local nameEspCorner = Instance.new("UICorner")
+nameEspCorner.CornerRadius = UDim.new(0, 5)
+nameEspCorner.Parent = nameEspBtn
+
+-- Movement Section
+local movementLabel = Instance.new("TextLabel")
+movementLabel.Size = UDim2.new(1, -20, 0, 25)
+movementLabel.Position = UDim2.new(0, 10, 0, 160)
+movementLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+movementLabel.BorderSizePixel = 0
+movementLabel.Text = "Movement Features"
+movementLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+movementLabel.TextScaled = true
+movementLabel.Font = Enum.Font.GothamBold
+movementLabel.Parent = frame
+
+local movementLabelCorner = Instance.new("UICorner")
+movementLabelCorner.CornerRadius = UDim.new(0, 5)
+movementLabelCorner.Parent = movementLabel
+
+-- Movement Buttons
+local speedBtn = Instance.new("TextButton")
+speedBtn.Size = UDim2.new(0.45, 0, 0, 30)
+speedBtn.Position = UDim2.new(0.025, 0, 0, 195)
+speedBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+speedBtn.BorderSizePixel = 0
+speedBtn.Text = "Speed: OFF"
+speedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedBtn.TextScaled = true
+speedBtn.Font = Enum.Font.GothamBold
+speedBtn.Parent = frame
 
 local speedCorner = Instance.new("UICorner")
 speedCorner.CornerRadius = UDim.new(0, 5)
-speedCorner.Parent = speedLabel
+speedCorner.Parent = speedBtn
 
--- Speed input
-local speedInput = Instance.new("TextBox")
-speedInput.Size = UDim2.new(0.6, 0, 0, 25)
-speedInput.Position = UDim2.new(0.05, 0, 0, 135)
-speedInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-speedInput.BorderSizePixel = 0
-speedInput.Text = tostring(humanoid.WalkSpeed)
-speedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-speedInput.TextScaled = true
-speedInput.Font = Enum.Font.Gotham
-speedInput.PlaceholderText = "Speed"
-speedInput.Parent = frame
-speedInput.Visible = false
-
-local speedInputCorner = Instance.new("UICorner")
-speedInputCorner.CornerRadius = UDim.new(0, 5)
-speedInputCorner.Parent = speedInput
-
--- Set speed button
-local setSpeedBtn = Instance.new("TextButton")
-setSpeedBtn.Size = UDim2.new(0.25, 0, 0, 25)
-setSpeedBtn.Position = UDim2.new(0.7, 0, 0, 135)
-setSpeedBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-setSpeedBtn.BorderSizePixel = 0
-setSpeedBtn.Text = "Set"
-setSpeedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-setSpeedBtn.TextScaled = true
-setSpeedBtn.Font = Enum.Font.GothamBold
-setSpeedBtn.Parent = frame
-setSpeedBtn.Visible = false
-
-local setSpeedCorner = Instance.new("UICorner")
-setSpeedCorner.CornerRadius = UDim.new(0, 5)
-setSpeedCorner.Parent = setSpeedBtn
-
--- Fly button
 local flyBtn = Instance.new("TextButton")
-flyBtn.Size = UDim2.new(0.4, 0, 0, 25)
-flyBtn.Position = UDim2.new(0.05, 0, 0, 170)
-flyBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+flyBtn.Size = UDim2.new(0.45, 0, 0, 30)
+flyBtn.Position = UDim2.new(0.525, 0, 0, 195)
+flyBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 255)
 flyBtn.BorderSizePixel = 0
 flyBtn.Text = "Fly: OFF"
 flyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 flyBtn.TextScaled = true
 flyBtn.Font = Enum.Font.GothamBold
 flyBtn.Parent = frame
-flyBtn.Visible = false
 
 local flyCorner = Instance.new("UICorner")
 flyCorner.CornerRadius = UDim.new(0, 5)
 flyCorner.Parent = flyBtn
 
--- Noclip button
 local noclipBtn = Instance.new("TextButton")
-noclipBtn.Size = UDim2.new(0.4, 0, 0, 25)
-noclipBtn.Position = UDim2.new(0.55, 0, 0, 170)
-noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 150, 0)
+noclipBtn.Size = UDim2.new(0.45, 0, 0, 30)
+noclipBtn.Position = UDim2.new(0.025, 0, 0, 235)
+noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 200, 100)
 noclipBtn.BorderSizePixel = 0
 noclipBtn.Text = "Noclip: OFF"
 noclipBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 noclipBtn.TextScaled = true
 noclipBtn.Font = Enum.Font.GothamBold
 noclipBtn.Parent = frame
-noclipBtn.Visible = false
 
 local noclipCorner = Instance.new("UICorner")
 noclipCorner.CornerRadius = UDim.new(0, 5)
 noclipCorner.Parent = noclipBtn
 
--- Reset button
+-- Reset Button
 local resetBtn = Instance.new("TextButton")
-resetBtn.Size = UDim2.new(0.4, 0, 0, 25)
-resetBtn.Position = UDim2.new(0.3, 0, 0, 205)
-resetBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+resetBtn.Size = UDim2.new(0.45, 0, 0, 30)
+resetBtn.Position = UDim2.new(0.525, 0, 0, 235)
+resetBtn.BackgroundColor3 = Color3.fromRGB(150, 150, 150)
 resetBtn.BorderSizePixel = 0
-resetBtn.Text = "Reset"
+resetBtn.Text = "Reset All"
 resetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 resetBtn.TextScaled = true
 resetBtn.Font = Enum.Font.GothamBold
 resetBtn.Parent = frame
-resetBtn.Visible = false
 
 local resetCorner = Instance.new("UICorner")
 resetCorner.CornerRadius = UDim.new(0, 5)
 resetCorner.Parent = resetBtn
 
--- Status display
+-- Status Display
 local statusText = Instance.new("TextLabel")
-statusText.Size = UDim2.new(1, -20, 0, 20)
-statusText.Position = UDim2.new(0, 10, 0, 240)
+statusText.Size = UDim2.new(1, -20, 0, 25)
+statusText.Position = UDim2.new(0, 10, 0, 280)
 statusText.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 statusText.BorderSizePixel = 0
-statusText.Text = "Enter password to unlock"
-statusText.TextColor3 = Color3.fromRGB(255, 255, 0)
+statusText.Text = "Ready - Drag title to move"
+statusText.TextColor3 = Color3.fromRGB(0, 255, 0)
 statusText.TextScaled = true
 statusText.Font = Enum.Font.Gotham
 statusText.Parent = frame
@@ -216,31 +211,126 @@ statusCorner.CornerRadius = UDim.new(0, 5)
 statusCorner.Parent = statusText
 
 -- Functions
-local function updateSpeed()
-    speedLabel.Text = "Walk Speed: " .. humanoid.WalkSpeed
-    speedInput.Text = tostring(humanoid.WalkSpeed)
-end
-
 local function updateStatus(text, color)
     statusText.Text = text
     statusText.TextColor3 = color
 end
 
-local function unlockGUI()
-    isUnlocked = true
-    passwordLabel.Visible = false
-    passwordInput.Visible = false
-    unlockBtn.Visible = false
-    speedLabel.Visible = true
-    speedInput.Visible = true
-    setSpeedBtn.Visible = true
-    flyBtn.Visible = true
-    noclipBtn.Visible = true
-    resetBtn.Visible = true
-    frame.Size = UDim2.new(0, 220, 0, 270)
-    frame.Position = UDim2.new(0.5, -110, 0.5, -135)
-    statusText.Position = UDim2.new(0, 10, 0, 240)
-    updateStatus("GUI unlocked!", Color3.fromRGB(0, 255, 0))
+local function stopESP()
+    if espConnection then
+        espConnection:Disconnect()
+        espConnection = nil
+    end
+    
+    -- Remove ESP elements
+    for _, obj in pairs(game:GetService("CoreGui"):GetDescendants()) do
+        if obj.Name == "ESPBox" or obj.Name == "ESPName" then
+            obj:Destroy()
+        end
+    end
+    
+    isESPEnabled = false
+    espBtn.Text = "ESP: OFF"
+    espBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    boxEspBtn.Text = "Box ESP: OFF"
+    boxEspBtn.BackgroundColor3 = Color3.fromRGB(255, 150, 100)
+    nameEspBtn.Text = "Name ESP: OFF"
+    nameEspBtn.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+    updateStatus("ESP disabled", Color3.fromRGB(255, 255, 0))
+end
+
+local function startESP()
+    stopESP() -- Stop any existing ESP
+    
+    isESPEnabled = true
+    espBtn.Text = "ESP: ON"
+    espBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+    updateStatus("ESP enabled", Color3.fromRGB(0, 255, 0))
+    
+    espConnection = game:GetService("RunService").Heartbeat:Connect(function()
+        if isESPEnabled then
+            for _, player in pairs(game.Players:GetPlayers()) do
+                if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    local rootPart = player.Character.HumanoidRootPart
+                    local head = player.Character:FindFirstChild("Head")
+                    
+                    if rootPart and head then
+                        -- Box ESP
+                        local box = game:GetService("CoreGui"):FindFirstChild("ESPBox_" .. player.Name)
+                        if not box then
+                            box = Instance.new("Frame")
+                            box.Name = "ESPBox_" .. player.Name
+                            box.Size = UDim2.new(0, 100, 0, 200)
+                            box.Position = UDim2.new(0, 0, 0, 0)
+                            box.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+                            box.BorderSizePixel = 2
+                            box.BorderColor3 = Color3.fromRGB(255, 255, 255)
+                            box.Parent = game:GetService("CoreGui")
+                        end
+                        
+                        -- Name ESP
+                        local nameLabel = game:GetService("CoreGui"):FindFirstChild("ESPName_" .. player.Name)
+                        if not nameLabel then
+                            nameLabel = Instance.new("TextLabel")
+                            nameLabel.Name = "ESPName_" .. player.Name
+                            nameLabel.Size = UDim2.new(0, 100, 0, 20)
+                            nameLabel.Position = UDim2.new(0, 0, 0, 0)
+                            nameLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                            nameLabel.BorderSizePixel = 1
+                            nameLabel.BorderColor3 = Color3.fromRGB(255, 255, 255)
+                            nameLabel.Text = player.Name
+                            nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                            nameLabel.TextScaled = true
+                            nameLabel.Font = Enum.Font.GothamBold
+                            nameLabel.Parent = game:GetService("CoreGui")
+                        end
+                        
+                        -- Update positions
+                        local screenPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(rootPart.Position)
+                        if onScreen then
+                            box.Position = UDim2.new(0, screenPos.X - 50, 0, screenPos.Y - 100)
+                            nameLabel.Position = UDim2.new(0, screenPos.X - 50, 0, screenPos.Y - 120)
+                            box.Visible = true
+                            nameLabel.Visible = true
+                        else
+                            box.Visible = false
+                            nameLabel.Visible = false
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end
+
+local function stopSpeed()
+    if speedConnection then
+        speedConnection:Disconnect()
+        speedConnection = nil
+    end
+    
+    humanoid.WalkSpeed = originalWalkSpeed
+    isSpeedEnabled = false
+    speedBtn.Text = "Speed: OFF"
+    speedBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+    updateStatus("Speed disabled", Color3.fromRGB(255, 255, 0))
+end
+
+local function startSpeed()
+    stopSpeed() -- Stop any existing speed
+    
+    isSpeedEnabled = true
+    speedBtn.Text = "Speed: ON"
+    speedBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
+    updateStatus("Speed enabled", Color3.fromRGB(0, 255, 0))
+    
+    humanoid.WalkSpeed = originalWalkSpeed * speedMultiplier
+    
+    speedConnection = game:GetService("RunService").Heartbeat:Connect(function()
+        if isSpeedEnabled then
+            humanoid.WalkSpeed = originalWalkSpeed * speedMultiplier
+        end
+    end)
 end
 
 local function stopFlying()
@@ -249,52 +339,44 @@ local function stopFlying()
         flyConnection = nil
     end
     
-    -- Restore normal physics
     workspace.Gravity = originalGravity
     humanoid:ChangeState(Enum.HumanoidStateType.Landing)
     
-    isFlying = false
+    isFlyEnabled = false
     flyBtn.Text = "Fly: OFF"
-    flyBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    flyBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 255)
     updateStatus("Flying stopped", Color3.fromRGB(255, 255, 0))
 end
 
 local function startFlying()
     stopFlying() -- Stop any existing flight
     
-    isFlying = true
+    isFlyEnabled = true
     flyBtn.Text = "Fly: ON"
-    flyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+    flyBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
     updateStatus("Flying enabled", Color3.fromRGB(0, 255, 0))
     
-    -- Disable gravity for real flying
     workspace.Gravity = 0
     
     flyConnection = game:GetService("RunService").Heartbeat:Connect(function()
-        if isFlying and humanoid and rootPart then
-            -- Keep character in flying state
+        if isFlyEnabled and humanoid and rootPart then
             humanoid:ChangeState(Enum.HumanoidStateType.Flying)
             
             local moveDirection = Vector3.new(0, 0, 0)
             local camera = workspace.CurrentCamera
             
-            -- Forward/Backward
             if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) then
                 moveDirection = moveDirection + (camera.CFrame.LookVector * flySpeed)
             end
             if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.S) then
                 moveDirection = moveDirection - (camera.CFrame.LookVector * flySpeed)
             end
-            
-            -- Left/Right
             if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.A) then
                 moveDirection = moveDirection - (camera.CFrame.RightVector * flySpeed)
             end
             if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.D) then
                 moveDirection = moveDirection + (camera.CFrame.RightVector * flySpeed)
             end
-            
-            -- Up/Down
             if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.Space) then
                 moveDirection = moveDirection + Vector3.new(0, flySpeed, 0)
             end
@@ -302,7 +384,6 @@ local function startFlying()
                 moveDirection = moveDirection - Vector3.new(0, flySpeed, 0)
             end
             
-            -- Apply movement
             if moveDirection.Magnitude > 0 then
                 rootPart.CFrame = rootPart.CFrame + moveDirection * 0.01
             end
@@ -316,30 +397,28 @@ local function stopNoclip()
         noclipConnection = nil
     end
     
-    -- Re-enable collisions
     for _, part in pairs(character:GetDescendants()) do
         if part:IsA("BasePart") then
             part.CanCollide = true
         end
     end
     
-    isNoclip = false
+    isNoclipEnabled = false
     noclipBtn.Text = "Noclip: OFF"
-    noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 150, 0)
+    noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 200, 100)
     updateStatus("Noclip disabled", Color3.fromRGB(255, 255, 0))
 end
 
 local function startNoclip()
     stopNoclip() -- Stop any existing noclip
     
-    isNoclip = true
+    isNoclipEnabled = true
     noclipBtn.Text = "Noclip: ON"
-    noclipBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
+    noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 100)
     updateStatus("Noclip enabled", Color3.fromRGB(0, 255, 0))
     
     noclipConnection = game:GetService("RunService").Heartbeat:Connect(function()
-        if isNoclip and character then
-            -- Disable collisions for all parts
+        if isNoclipEnabled and character then
             for _, part in pairs(character:GetDescendants()) do
                 if part:IsA("BasePart") then
                     part.CanCollide = false
@@ -349,37 +428,49 @@ local function startNoclip()
     end)
 end
 
+local function resetAll()
+    stopESP()
+    stopSpeed()
+    stopFlying()
+    stopNoclip()
+    updateStatus("All features reset", Color3.fromRGB(0, 255, 0))
+end
+
 -- Button events
-unlockBtn.MouseButton1Click:Connect(function()
-    if passwordInput.Text == "1234" then
-        unlockGUI()
+espBtn.MouseButton1Click:Connect(function()
+    if isESPEnabled then
+        stopESP()
     else
-        updateStatus("Wrong password!", Color3.fromRGB(255, 100, 100))
-        passwordInput.Text = ""
+        startESP()
     end
 end)
 
-passwordInput.FocusLost:Connect(function()
-    if passwordInput.Text == "1234" then
-        unlockGUI()
+boxEspBtn.MouseButton1Click:Connect(function()
+    if isESPEnabled then
+        stopESP()
+    else
+        startESP()
     end
 end)
 
-setSpeedBtn.MouseButton1Click:Connect(function()
-    if not isUnlocked then return end
-    local speed = tonumber(speedInput.Text)
-    if speed and speed >= 5 and speed <= 100 then
-        humanoid.WalkSpeed = speed
-        updateSpeed()
-        updateStatus("Speed set to " .. speed, Color3.fromRGB(0, 255, 0))
+nameEspBtn.MouseButton1Click:Connect(function()
+    if isESPEnabled then
+        stopESP()
     else
-        updateStatus("Invalid speed (5-100)", Color3.fromRGB(255, 100, 100))
+        startESP()
+    end
+end)
+
+speedBtn.MouseButton1Click:Connect(function()
+    if isSpeedEnabled then
+        stopSpeed()
+    else
+        startSpeed()
     end
 end)
 
 flyBtn.MouseButton1Click:Connect(function()
-    if not isUnlocked then return end
-    if isFlying then
+    if isFlyEnabled then
         stopFlying()
     else
         startFlying()
@@ -387,8 +478,7 @@ flyBtn.MouseButton1Click:Connect(function()
 end)
 
 noclipBtn.MouseButton1Click:Connect(function()
-    if not isUnlocked then return end
-    if isNoclip then
+    if isNoclipEnabled then
         stopNoclip()
     else
         startNoclip()
@@ -396,15 +486,10 @@ noclipBtn.MouseButton1Click:Connect(function()
 end)
 
 resetBtn.MouseButton1Click:Connect(function()
-    if not isUnlocked then return end
-    humanoid.WalkSpeed = 16
-    updateSpeed()
-    stopFlying()
-    stopNoclip()
-    updateStatus("Reset to default", Color3.fromRGB(0, 255, 0))
+    resetAll()
 end)
 
--- Make GUI draggable (improved)
+-- Make GUI draggable
 local isDragging = false
 local dragStart = nil
 local startPos = nil
@@ -433,21 +518,14 @@ player.CharacterAdded:Connect(function(newChar)
     character = newChar
     humanoid = character:WaitForChild("Humanoid")
     rootPart = character:WaitForChild("HumanoidRootPart")
-    updateSpeed()
-    stopFlying()
-    stopNoclip()
+    originalWalkSpeed = humanoid.WalkSpeed
+    resetAll()
     updateStatus("Character respawned", Color3.fromRGB(255, 255, 0))
 end)
 
--- Update when speed changes
-humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(updateSpeed)
-
-print("Speed & Fly & Noclip Editor with Password loaded!")
-print("Password is: 1234")
+print("ERLC Utility Script loaded!")
+print("Features: ESP, Speed, Fly, Noclip")
 print("Drag the title bar to move the GUI")
 print("WASD + Space/Shift to fly")
-print("Click Fly button to toggle flying")
-print("Click Noclip button to walk through walls")
-print("Enter speed (5-100) and click Set")
-print("Click Reset to return to default")
-print("Now you can fly and walk through walls!")
+print("Click buttons to toggle features")
+print("Click Reset All to disable everything")

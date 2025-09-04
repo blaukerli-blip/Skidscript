@@ -447,4 +447,3 @@ print("GUI is in top right corner")
 print("WASD + Space/Shift to fly")
 print("Click buttons to toggle features")
 print("Enter speed (5-100) and click Set")
-

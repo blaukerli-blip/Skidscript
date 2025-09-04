@@ -1,5 +1,5 @@
 -- Sicherheitscheck
-local ownerId = 123456789 -- Deine UserId
+local ownerId = 8740149837 -- Deine UserId
 if game.Players.LocalPlayer.UserId ~= ownerId then return end
 
 -- Einfaches UI mit Fly und Speed

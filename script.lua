@@ -1,4 +1,4 @@
--- Clean Walk Speed & Fly Editor for Xeno (GitHub Raw)
+-- Final Speed & Fly Script with Movable UI for Xeno
 -- Copy this entire script and paste into Xeno
 
 wait(2) -- Wait for game to load
@@ -29,7 +29,7 @@ local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 10)
 corner.Parent = frame
 
--- Title
+-- Title (this is draggable)
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 30)
 title.Position = UDim2.new(0, 0, 0, 0)
@@ -227,6 +227,30 @@ resetBtn.MouseButton1Click:Connect(function()
     updateStatus("Reset to default", Color3.fromRGB(0, 255, 0))
 end)
 
+-- Make GUI draggable
+local isDragging = false
+local dragStart = nil
+local startPos = nil
+
+title.MouseButton1Down:Connect(function()
+    isDragging = true
+    dragStart = frame.Position
+    startPos = game:GetService("UserInputService"):GetMouseLocation()
+end)
+
+game:GetService("UserInputService").InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isDragging = false
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = game:GetService("UserInputService"):GetMouseLocation() - startPos
+        frame.Position = UDim2.new(dragStart.X.Scale, dragStart.X.Offset + delta.X, dragStart.Y.Scale, dragStart.Y.Offset + delta.Y)
+    end
+end)
+
 -- Character respawn
 player.CharacterAdded:Connect(function(newChar)
     character = newChar
@@ -241,6 +265,7 @@ end)
 humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(updateSpeed)
 
 print("Speed & Fly Editor loaded!")
+print("Drag the title bar to move the GUI")
 print("WASD + Space/Shift to fly")
 print("Click Fly button to toggle")
 print("Enter speed (5-100) and click Set")

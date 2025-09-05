@@ -24,11 +24,14 @@ local isUnlocked = false
 -- Create GUI
 local gui = Instance.new("ScreenGui")
 gui.Name = "SimpleFlyGUI"
-gui.Parent = player.PlayerGui
+if syn and syn.protect_gui then
+	syn.protect_gui(gui)
+end
+gui.Parent = player:FindFirstChildOfClass("PlayerGui") or player.PlayerGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 200, 0, 280)
-frame.Position = UDim2.new(1, -220, 0, 20) -- Top right corner
+frame.Size = UDim2.new(0, 220, 0, 360)
+frame.Position = UDim2.new(1, -240, 0, 20) -- Top right corner
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
 frame.Parent = gui
@@ -184,9 +187,9 @@ local noclipCorner = Instance.new("UICorner")
 noclipCorner.CornerRadius = UDim.new(0, 5)
 noclipCorner.Parent = noclipBtn
 
--- Spin button
+-- Spin button and speed
 local spinBtn = Instance.new("TextButton")
-spinBtn.Size = UDim2.new(0.9, 0, 0, 30)
+spinBtn.Size = UDim2.new(0.55, 0, 0, 30)
 spinBtn.Position = UDim2.new(0.05, 0, 0, 250)
 spinBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 255)
 spinBtn.BorderSizePixel = 0
@@ -201,10 +204,27 @@ local spinCorner = Instance.new("UICorner")
 spinCorner.CornerRadius = UDim.new(0, 5)
 spinCorner.Parent = spinBtn
 
+local spinSpeedInput = Instance.new("TextBox")
+spinSpeedInput.Size = UDim2.new(0.3, 0, 0, 30)
+spinSpeedInput.Position = UDim2.new(0.65, 0, 0, 250)
+spinSpeedInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+spinSpeedInput.BorderSizePixel = 0
+spinSpeedInput.Text = tostring(spinSpeed)
+spinSpeedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+spinSpeedInput.TextScaled = true
+spinSpeedInput.Font = Enum.Font.Gotham
+spinSpeedInput.PlaceholderText = "Spin"
+spinSpeedInput.Parent = frame
+spinSpeedInput.Visible = false
+
+local spinSpeedCorner = Instance.new("UICorner")
+spinSpeedCorner.CornerRadius = UDim.new(0, 5)
+spinSpeedCorner.Parent = spinSpeedInput
+
 -- Status display
 local statusText = Instance.new("TextLabel")
 statusText.Size = UDim2.new(1, -20, 0, 20)
-statusText.Position = UDim2.new(0, 10, 0, 290)
+statusText.Position = UDim2.new(0, 10, 0, 320)
 statusText.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 statusText.BorderSizePixel = 0
 statusText.Text = "Enter password to unlock"
@@ -219,226 +239,225 @@ statusCorner.Parent = statusText
 
 -- Functions
 local function updateStatus(text, color)
-    statusText.Text = text
-    statusText.TextColor3 = color
+	statusText.Text = text
+	statusText.TextColor3 = color
 end
 
 local function unlockGUI()
-    isUnlocked = true
-    passwordLabel.Visible = false
-    passwordInput.Visible = false
-    unlockBtn.Visible = false
-    speedLabel.Visible = true
-    speedInput.Visible = true
-    setSpeedBtn.Visible = true
-    flyBtn.Visible = true
-    noclipBtn.Visible = true
-    spinBtn.Visible = true
-    frame.Size = UDim2.new(0, 200, 0, 320)
-    updateStatus("GUI unlocked!", Color3.fromRGB(0, 255, 0))
+	isUnlocked = true
+	passwordLabel.Visible = false
+	passwordInput.Visible = false
+	unlockBtn.Visible = false
+	speedLabel.Visible = true
+	speedInput.Visible = true
+	setSpeedBtn.Visible = true
+	flyBtn.Visible = true
+	noclipBtn.Visible = true
+	spinBtn.Visible = true
+	spinSpeedInput.Visible = true
+	frame.Size = UDim2.new(0, 220, 0, 360)
+	updateStatus("GUI unlocked!", Color3.fromRGB(0, 255, 0))
 end
 
 local function stopFlying()
-    if flyConnection then
-        flyConnection:Disconnect()
-        flyConnection = nil
-    end
-    
-    -- Restore normal physics
-    workspace.Gravity = originalGravity
-    if humanoid then
-        humanoid:ChangeState(Enum.HumanoidStateType.Landing)
-    end
-    
-    isFlyEnabled = false
-    flyBtn.Text = "Fly: OFF"
-    flyBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-    updateStatus("Flying stopped", Color3.fromRGB(255, 255, 0))
+	if flyConnection then
+		flyConnection:Disconnect()
+		flyConnection = nil
+	end
+	workspace.Gravity = originalGravity
+	if humanoid then
+		humanoid:ChangeState(Enum.HumanoidStateType.Landing)
+	end
+	isFlyEnabled = false
+	flyBtn.Text = "Fly: OFF"
+	flyBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+	updateStatus("Flying stopped", Color3.fromRGB(255, 255, 0))
 end
 
 local function startFlying()
-    stopFlying() -- Stop any existing flight
-    
-    isFlyEnabled = true
-    flyBtn.Text = "Fly: ON"
-    flyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
-    updateStatus("Flying enabled", Color3.fromRGB(0, 255, 0))
-    
-    -- Disable gravity for real flying
-    workspace.Gravity = 0
-    
-    flyConnection = game:GetService("RunService").Heartbeat:Connect(function()
-        if isFlyEnabled and humanoid and rootPart then
-            -- Keep character in flying state
-            humanoid:ChangeState(Enum.HumanoidStateType.Flying)
-            
-            local moveDirection = Vector3.new(0, 0, 0)
-            local camera = workspace.CurrentCamera
-            
-            -- Forward/Backward
-            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.W) then
-                moveDirection = moveDirection + (camera.CFrame.LookVector * flySpeed)
-            end
-            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.S) then
-                moveDirection = moveDirection - (camera.CFrame.LookVector * flySpeed)
-            end
-            
-            -- Left/Right
-            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.A) then
-                moveDirection = moveDirection - (camera.CFrame.RightVector * flySpeed)
-            end
-            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.D) then
-                moveDirection = moveDirection + (camera.CFrame.RightVector * flySpeed)
-            end
-            
-            -- Up/Down
-            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.Space) then
-                moveDirection = moveDirection + Vector3.new(0, flySpeed, 0)
-            end
-            if game:GetService("UserInputService"):IsKeyDown(Enum.KeyCode.LeftShift) then
-                moveDirection = moveDirection - Vector3.new(0, flySpeed, 0)
-            end
-            
-            -- Apply movement with better physics
-            if moveDirection.Magnitude > 0 then
-                local newCFrame = rootPart.CFrame + (moveDirection * 0.01)
-                rootPart.CFrame = newCFrame
-            end
-        end
-    end)
+	-- ensure any prior state is stopped
+	if flyConnection then
+		flyConnection:Disconnect()
+		flyConnection = nil
+	end
+	isFlyEnabled = true
+	flyBtn.Text = "Fly: ON"
+	flyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
+	updateStatus("Flying enabled", Color3.fromRGB(0, 255, 0))
+	workspace.Gravity = 0
+	flyConnection = game:GetService("RunService").Heartbeat:Connect(function()
+		if not isFlyEnabled then return end
+		if humanoid and rootPart then
+			humanoid:ChangeState(Enum.HumanoidStateType.Flying)
+			local moveDirection = Vector3.new()
+			local camera = workspace.CurrentCamera
+			local UIS = game:GetService("UserInputService")
+			if UIS:IsKeyDown(Enum.KeyCode.W) then
+				moveDirection = moveDirection + (camera.CFrame.LookVector * flySpeed)
+			end
+			if UIS:IsKeyDown(Enum.KeyCode.S) then
+				moveDirection = moveDirection - (camera.CFrame.LookVector * flySpeed)
+			end
+			if UIS:IsKeyDown(Enum.KeyCode.A) then
+				moveDirection = moveDirection - (camera.CFrame.RightVector * flySpeed)
+			end
+			if UIS:IsKeyDown(Enum.KeyCode.D) then
+				moveDirection = moveDirection + (camera.CFrame.RightVector * flySpeed)
+			end
+			if UIS:IsKeyDown(Enum.KeyCode.Space) then
+				moveDirection = moveDirection + Vector3.new(0, flySpeed, 0)
+			end
+			if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then
+				moveDirection = moveDirection - Vector3.new(0, flySpeed, 0)
+			end
+			if moveDirection.Magnitude > 0 then
+				rootPart.CFrame = rootPart.CFrame + (moveDirection * 0.01)
+			end
+		end
+	end)
 end
 
 local function stopNoclip()
-    if noclipConnection then
-        noclipConnection:Disconnect()
-        noclipConnection = nil
-    end
-    
-    for _, part in pairs(character:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = true
-        end
-    end
-    
-    isNoclipEnabled = false
-    noclipBtn.Text = "Noclip: OFF"
-    noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 150, 0)
-    updateStatus("Noclip disabled", Color3.fromRGB(255, 255, 0))
+	if noclipConnection then
+		noclipConnection:Disconnect()
+		noclipConnection = nil
+	end
+	for _, part in pairs(character:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.CanCollide = true
+		end
+	end
+	isNoclipEnabled = false
+	noclipBtn.Text = "Noclip: OFF"
+	noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 150, 0)
+	updateStatus("Noclip disabled", Color3.fromRGB(255, 255, 0))
 end
 
 local function startNoclip()
-    stopNoclip() -- Stop any existing noclip
-    
-    isNoclipEnabled = true
-    noclipBtn.Text = "Noclip: ON"
-    noclipBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
-    updateStatus("Noclip enabled", Color3.fromRGB(0, 255, 0))
-    
-    noclipConnection = game:GetService("RunService").Heartbeat:Connect(function()
-        if isNoclipEnabled and character then
-            for _, part in pairs(character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                end
-            end
-        end
-    end)
+	if noclipConnection then
+		noclipConnection:Disconnect()
+		noclipConnection = nil
+	end
+	isNoclipEnabled = true
+	noclipBtn.Text = "Noclip: ON"
+	noclipBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
+	updateStatus("Noclip enabled", Color3.fromRGB(0, 255, 0))
+	noclipConnection = game:GetService("RunService").Heartbeat:Connect(function()
+		if isNoclipEnabled and character then
+			for _, part in pairs(character:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.CanCollide = false
+				end
+			end
+		end
+	end)
 end
 
 local function stopSpin()
-    if spinConnection then
-        spinConnection:Disconnect()
-        spinConnection = nil
-    end
-    
-    isSpinEnabled = false
-    spinBtn.Text = "Spin: OFF"
-    spinBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 255)
-    updateStatus("Spin stopped", Color3.fromRGB(255, 255, 0))
+	if spinConnection then
+		spinConnection:Disconnect()
+		spinConnection = nil
+	end
+	isSpinEnabled = false
+	spinBtn.Text = "Spin: OFF"
+	spinBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 255)
+	updateStatus("Spin stopped", Color3.fromRGB(255, 255, 0))
 end
 
 local function startSpin()
-    stopSpin() -- Stop any existing spin
-    
-    isSpinEnabled = true
-    spinBtn.Text = "Spin: ON"
-    spinBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
-    updateStatus("Spin enabled", Color3.fromRGB(0, 255, 0))
-    
-    spinConnection = game:GetService("RunService").Heartbeat:Connect(function()
-        if isSpinEnabled and rootPart then
-            rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(spinSpeed), 0)
-        end
-    end)
+	if spinConnection then
+		spinConnection:Disconnect()
+		spinConnection = nil
+	end
+	isSpinEnabled = true
+	spinBtn.Text = "Spin: ON"
+	spinBtn.BackgroundColor3 = Color3.fromRGB(255, 0, 255)
+	updateStatus("Spin enabled", Color3.fromRGB(0, 255, 0))
+	spinConnection = game:GetService("RunService").Heartbeat:Connect(function()
+		if isSpinEnabled and rootPart then
+			rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, math.rad(spinSpeed), 0)
+		end
+	end)
 end
 
 -- Button events
 unlockBtn.MouseButton1Click:Connect(function()
-    if passwordInput.Text == "8080" then
-        unlockGUI()
-    else
-        updateStatus("Wrong password!", Color3.fromRGB(255, 100, 100))
-        passwordInput.Text = ""
-    end
+	if passwordInput.Text == "8080" then
+		unlockGUI()
+	else
+		updateStatus("Wrong password!", Color3.fromRGB(255, 100, 100))
+		passwordInput.Text = ""
+	end
 end)
 
 passwordInput.FocusLost:Connect(function()
-    if passwordInput.Text == "8080" then
-        unlockGUI()
-    end
+	if passwordInput.Text == "8080" then
+		unlockGUI()
+	end
 end)
 
 setSpeedBtn.MouseButton1Click:Connect(function()
-    if not isUnlocked then return end
-    local speed = tonumber(speedInput.Text)
-    if speed and speed >= 5 and speed <= 100 then
-        humanoid.WalkSpeed = speed
-        speedLabel.Text = "Speed: " .. speed
-        updateStatus("Speed set to " .. speed, Color3.fromRGB(0, 255, 0))
-    else
-        updateStatus("Invalid speed (5-100)", Color3.fromRGB(255, 100, 100))
-    end
+	if not isUnlocked then return end
+	local speed = tonumber(speedInput.Text)
+	if speed then
+		humanoid.WalkSpeed = speed
+		speedLabel.Text = "Speed: " .. tostring(speed)
+		updateStatus("Speed set to " .. tostring(speed), Color3.fromRGB(0, 255, 0))
+	else
+		updateStatus("Invalid speed", Color3.fromRGB(255, 100, 100))
+	end
+end)
+
+spinSpeedInput.FocusLost:Connect(function()
+	if not isUnlocked then return end
+	local val = tonumber(spinSpeedInput.Text)
+	if val then
+		spinSpeed = val
+		updateStatus("Spin speed = " .. tostring(spinSpeed), Color3.fromRGB(0, 255, 0))
+	else
+		updateStatus("Invalid spin speed", Color3.fromRGB(255, 100, 100))
+	end
 end)
 
 flyBtn.MouseButton1Click:Connect(function()
-    if not isUnlocked then return end
-    if isFlyEnabled then
-        stopFlying()
-    else
-        startFlying()
-    end
+	if not isUnlocked then return end
+	if isFlyEnabled then
+		stopFlying()
+	else
+		startFlying()
+	end
 end)
 
 noclipBtn.MouseButton1Click:Connect(function()
-    if not isUnlocked then return end
-    if isNoclipEnabled then
-        stopNoclip()
-    else
-        startNoclip()
-    end
+	if not isUnlocked then return end
+	if isNoclipEnabled then
+		stopNoclip()
+	else
+		startNoclip()
+	end
 end)
 
 spinBtn.MouseButton1Click:Connect(function()
-    if not isUnlocked then return end
-    if isSpinEnabled then
-        stopSpin()
-    else
-        startSpin()
-    end
+	if not isUnlocked then return end
+	if isSpinEnabled then
+		stopSpin()
+	else
+		startSpin()
+	end
 end)
 
 -- Character respawn
 player.CharacterAdded:Connect(function(newChar)
-    character = newChar
-    humanoid = character:WaitForChild("Humanoid")
-    rootPart = character:WaitForChild("HumanoidRootPart")
-    originalWalkSpeed = humanoid.WalkSpeed
-    speedLabel.Text = "Speed: " .. humanoid.WalkSpeed
-    speedInput.Text = tostring(humanoid.WalkSpeed)
-    stopFlying()
-    stopNoclip()
-    stopSpin()
-    updateStatus("Character respawned", Color3.fromRGB(255, 255, 0))
+	character = newChar
+	humanoid = character:WaitForChild("Humanoid")
+	rootPart = character:WaitForChild("HumanoidRootPart")
+	originalWalkSpeed = humanoid.WalkSpeed
+	speedLabel.Text = "Speed: " .. humanoid.WalkSpeed
+	speedInput.Text = tostring(humanoid.WalkSpeed)
+	stopFlying()
+	stopNoclip()
+	stopSpin()
+	updateStatus("Character respawned", Color3.fromRGB(255, 255, 0))
 end)
 
 print("Simple Fly GUI loaded!")
@@ -446,4 +465,4 @@ print("Password is: 8080")
 print("GUI is in top right corner")
 print("WASD + Space/Shift to fly")
 print("Click buttons to toggle features")
-print("Enter speed (5-100) and click Set")
+print("Use spin input to change spin speed")

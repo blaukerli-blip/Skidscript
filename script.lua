@@ -22,12 +22,23 @@ local spinSpeed = 5
 local isUnlocked = false
 
 -- Create GUI
+-- Remove existing GUI to avoid duplicates when re-executing
+local playerGui = player:FindFirstChildOfClass("PlayerGui") or player.PlayerGui
+local existingGui = playerGui and playerGui:FindFirstChild("SimpleFlyGUI")
+if existingGui then
+	existingGui:Destroy()
+end
+
 local gui = Instance.new("ScreenGui")
 gui.Name = "SimpleFlyGUI"
+-- Persist UI across death
+gui.ResetOnSpawn = false
+-- Optional: ignore top-bar inset for consistent positioning
+gui.IgnoreGuiInset = true
 if syn and syn.protect_gui then
 	syn.protect_gui(gui)
 end
-gui.Parent = player:FindFirstChildOfClass("PlayerGui") or player.PlayerGui
+gui.Parent = playerGui
 
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 220, 0, 360)
@@ -454,6 +465,7 @@ player.CharacterAdded:Connect(function(newChar)
 	originalWalkSpeed = humanoid.WalkSpeed
 	speedLabel.Text = "Speed: " .. humanoid.WalkSpeed
 	speedInput.Text = tostring(humanoid.WalkSpeed)
+	-- Do not hide GUI; just stop active movement effects
 	stopFlying()
 	stopNoclip()
 	stopSpin()

@@ -15,6 +15,7 @@ local isSpinEnabled = false
 local flyConnection = nil
 local noclipConnection = nil
 local spinConnection = nil
+local diedConnection = nil
 local originalGravity = workspace.Gravity
 local originalWalkSpeed = humanoid.WalkSpeed
 local flySpeed = 50
@@ -60,15 +61,37 @@ title.BorderSizePixel = 0
 title.Text = "Fly Panel"
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.TextScaled = true
+local titleCorner = Instance.new("UICorner")
+local passwordLabel = Instance.new("TextLabel")
+local passwordLabelCorner = Instance.new("UICorner")
+local passwordInput = Instance.new("TextBox")
+local passwordInputCorner = Instance.new("UICorner")
+local unlockBtn = Instance.new("TextButton")
+local unlockCorner = Instance.new("UICorner")
+local speedLabel = Instance.new("TextLabel")
+local speedLabelCorner = Instance.new("UICorner")
+local speedInput = Instance.new("TextBox")
+local speedInputCorner = Instance.new("UICorner")
+local setSpeedBtn = Instance.new("TextButton")
+local setSpeedCorner = Instance.new("UICorner")
+local flyBtn = Instance.new("TextButton")
+local flyCorner = Instance.new("UICorner")
+local noclipBtn = Instance.new("TextButton")
+local noclipCorner = Instance.new("UICorner")
+local spinBtn = Instance.new("TextButton")
+local spinCorner = Instance.new("UICorner")
+local spinSpeedInput = Instance.new("TextBox")
+local spinSpeedCorner = Instance.new("UICorner")
+local statusText = Instance.new("TextLabel")
+local statusCorner = Instance.new("UICorner")
+
 title.Font = Enum.Font.GothamBold
 title.Parent = frame
 
-local titleCorner = Instance.new("UICorner")
 titleCorner.CornerRadius = UDim.new(0, 10)
 titleCorner.Parent = title
 
 -- Password section
-local passwordLabel = Instance.new("TextLabel")
 passwordLabel.Size = UDim2.new(1, -20, 0, 20)
 passwordLabel.Position = UDim2.new(0, 10, 0, 40)
 passwordLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
@@ -79,11 +102,9 @@ passwordLabel.TextScaled = true
 passwordLabel.Font = Enum.Font.Gotham
 passwordLabel.Parent = frame
 
-local passwordLabelCorner = Instance.new("UICorner")
 passwordLabelCorner.CornerRadius = UDim.new(0, 5)
 passwordLabelCorner.Parent = passwordLabel
 
-local passwordInput = Instance.new("TextBox")
 passwordInput.Size = UDim2.new(0.6, 0, 0, 25)
 passwordInput.Position = UDim2.new(0.05, 0, 0, 70)
 passwordInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
@@ -95,11 +116,9 @@ passwordInput.Font = Enum.Font.Gotham
 passwordInput.PlaceholderText = "Password"
 passwordInput.Parent = frame
 
-local passwordInputCorner = Instance.new("UICorner")
 passwordInputCorner.CornerRadius = UDim.new(0, 5)
 passwordInputCorner.Parent = passwordInput
 
-local unlockBtn = Instance.new("TextButton")
 unlockBtn.Size = UDim2.new(0.25, 0, 0, 25)
 unlockBtn.Position = UDim2.new(0.7, 0, 0, 70)
 unlockBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
@@ -110,12 +129,10 @@ unlockBtn.TextScaled = true
 unlockBtn.Font = Enum.Font.GothamBold
 unlockBtn.Parent = frame
 
-local unlockCorner = Instance.new("UICorner")
 unlockCorner.CornerRadius = UDim.new(0, 5)
 unlockCorner.Parent = unlockBtn
 
 -- Speed section (hidden until unlocked)
-local speedLabel = Instance.new("TextLabel")
 speedLabel.Size = UDim2.new(1, -20, 0, 20)
 speedLabel.Position = UDim2.new(0, 10, 0, 105)
 speedLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
@@ -127,11 +144,9 @@ speedLabel.Font = Enum.Font.Gotham
 speedLabel.Parent = frame
 speedLabel.Visible = false
 
-local speedLabelCorner = Instance.new("UICorner")
 speedLabelCorner.CornerRadius = UDim.new(0, 5)
 speedLabelCorner.Parent = speedLabel
 
-local speedInput = Instance.new("TextBox")
 speedInput.Size = UDim2.new(0.6, 0, 0, 25)
 speedInput.Position = UDim2.new(0.05, 0, 0, 135)
 speedInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
@@ -144,11 +159,9 @@ speedInput.PlaceholderText = "Speed"
 speedInput.Parent = frame
 speedInput.Visible = false
 
-local speedInputCorner = Instance.new("UICorner")
 speedInputCorner.CornerRadius = UDim.new(0, 5)
 speedInputCorner.Parent = speedInput
 
-local setSpeedBtn = Instance.new("TextButton")
 setSpeedBtn.Size = UDim2.new(0.25, 0, 0, 25)
 setSpeedBtn.Position = UDim2.new(0.7, 0, 0, 135)
 setSpeedBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
@@ -160,12 +173,10 @@ setSpeedBtn.Font = Enum.Font.GothamBold
 setSpeedBtn.Parent = frame
 setSpeedBtn.Visible = false
 
-local setSpeedCorner = Instance.new("UICorner")
 setSpeedCorner.CornerRadius = UDim.new(0, 5)
 setSpeedCorner.Parent = setSpeedBtn
 
 -- Fly button
-local flyBtn = Instance.new("TextButton")
 flyBtn.Size = UDim2.new(0.9, 0, 0, 30)
 flyBtn.Position = UDim2.new(0.05, 0, 0, 170)
 flyBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
@@ -177,12 +188,10 @@ flyBtn.Font = Enum.Font.GothamBold
 flyBtn.Parent = frame
 flyBtn.Visible = false
 
-local flyCorner = Instance.new("UICorner")
 flyCorner.CornerRadius = UDim.new(0, 5)
 flyCorner.Parent = flyBtn
 
 -- Noclip button
-local noclipBtn = Instance.new("TextButton")
 noclipBtn.Size = UDim2.new(0.9, 0, 0, 30)
 noclipBtn.Position = UDim2.new(0.05, 0, 0, 210)
 noclipBtn.BackgroundColor3 = Color3.fromRGB(255, 150, 0)
@@ -194,12 +203,10 @@ noclipBtn.Font = Enum.Font.GothamBold
 noclipBtn.Parent = frame
 noclipBtn.Visible = false
 
-local noclipCorner = Instance.new("UICorner")
 noclipCorner.CornerRadius = UDim.new(0, 5)
 noclipCorner.Parent = noclipBtn
 
 -- Spin button and speed
-local spinBtn = Instance.new("TextButton")
 spinBtn.Size = UDim2.new(0.55, 0, 0, 30)
 spinBtn.Position = UDim2.new(0.05, 0, 0, 250)
 spinBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 255)
@@ -211,11 +218,9 @@ spinBtn.Font = Enum.Font.GothamBold
 spinBtn.Parent = frame
 spinBtn.Visible = false
 
-local spinCorner = Instance.new("UICorner")
 spinCorner.CornerRadius = UDim.new(0, 5)
 spinCorner.Parent = spinBtn
 
-local spinSpeedInput = Instance.new("TextBox")
 spinSpeedInput.Size = UDim2.new(0.3, 0, 0, 30)
 spinSpeedInput.Position = UDim2.new(0.65, 0, 0, 250)
 spinSpeedInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
@@ -228,12 +233,10 @@ spinSpeedInput.PlaceholderText = "Spin"
 spinSpeedInput.Parent = frame
 spinSpeedInput.Visible = false
 
-local spinSpeedCorner = Instance.new("UICorner")
 spinSpeedCorner.CornerRadius = UDim.new(0, 5)
 spinSpeedCorner.Parent = spinSpeedInput
 
 -- Status display
-local statusText = Instance.new("TextLabel")
 statusText.Size = UDim2.new(1, -20, 0, 20)
 statusText.Position = UDim2.new(0, 10, 0, 320)
 statusText.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
@@ -244,9 +247,24 @@ statusText.TextScaled = true
 statusText.Font = Enum.Font.Gotham
 statusText.Parent = frame
 
-local statusCorner = Instance.new("UICorner")
 statusCorner.CornerRadius = UDim.new(0, 5)
 statusCorner.Parent = statusText
+
+-- Helpers
+local function bindDied()
+	if diedConnection then
+		diedConnection:Disconnect()
+		diedConnection = nil
+	end
+	if humanoid then
+		diedConnection = humanoid.Died:Connect(function()
+			-- Ensure all features stop and physics reset
+			stopSpin()
+			stopNoclip()
+			stopFlying()
+		end)
+	end
+end
 
 -- Functions
 local function updateStatus(text, color)
@@ -277,6 +295,7 @@ local function stopFlying()
 	end
 	workspace.Gravity = originalGravity
 	if humanoid then
+		humanoid.AutoRotate = true
 		humanoid:ChangeState(Enum.HumanoidStateType.Landing)
 	end
 	isFlyEnabled = false
@@ -296,6 +315,9 @@ local function startFlying()
 	flyBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 100)
 	updateStatus("Flying enabled", Color3.fromRGB(0, 255, 0))
 	workspace.Gravity = 0
+	if humanoid then
+		humanoid.AutoRotate = false
+	end
 	flyConnection = game:GetService("RunService").Heartbeat:Connect(function()
 		if not isFlyEnabled then return end
 		if humanoid and rootPart then
@@ -457,6 +479,9 @@ spinBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
+-- Bind death handler for current humanoid
+bindDied()
+
 -- Character respawn
 player.CharacterAdded:Connect(function(newChar)
 	character = newChar
@@ -465,10 +490,11 @@ player.CharacterAdded:Connect(function(newChar)
 	originalWalkSpeed = humanoid.WalkSpeed
 	speedLabel.Text = "Speed: " .. humanoid.WalkSpeed
 	speedInput.Text = tostring(humanoid.WalkSpeed)
-	-- Do not hide GUI; just stop active movement effects
+	-- Stop active effects and rebind death handler
 	stopFlying()
 	stopNoclip()
 	stopSpin()
+	bindDied()
 	updateStatus("Character respawned", Color3.fromRGB(255, 255, 0))
 end)
 
